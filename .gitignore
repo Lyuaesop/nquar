@@ -1,0 +1,8 @@
+/.env
+/.idea
+/dist
+/tool
+/peer-key
+/server/.*
+/node_modules
+/package-lock.json

@@ -66,7 +66,7 @@ export default class Runtime {
 				return res.send(new Buffer('Forbidden'));
 			}
 		});
-		/** POST / {recipient,level} {hash} */
+		/** POST / {recipient,level} {} */
 		app.post('/', async (req, res) => {
 			if (!this.isOriginAllowed(req)) return res.send(new Buffer('Forbidden')); // Origin not allowed
 			let param = req.body as string;

@@ -47,9 +47,12 @@ export default class Runtime {
 						date: new Date(Date.now()).toLocaleDateString()
 					});
 					await row.save();
-				} else if (!row.hash) {
-					row.hash = this.randomString();
-					await row.save();
+				} else {
+					if (row.amount >= 5 || row.times > 50) return res.send(new Buffer('Forbidden'));
+					if (!row.hash) {
+						row.hash = this.randomString();
+						await row.save();
+					}
 				}
 				let result: string[] = [], tmp = '';
 				row.hash.split('').forEach(v => {
@@ -117,7 +120,7 @@ export default class Runtime {
 				date: new Date(Date.now()).toLocaleDateString(),
 				recipient: params.recipient as string,
 				times: {$lt: 100},
-				amount: {$lt: 10},
+				amount: {$lt: 5},
 				last_request_at: {$lte: time}
 			});
 			if (!user) return res.send(new Buffer('Forbidden')); // Invalid parameters or frequent requests

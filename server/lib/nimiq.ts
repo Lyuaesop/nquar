@@ -69,7 +69,9 @@ export default class Nimiq {
 				recipient: address.toUserFriendlyAddress()
 			});
 			await pay.save();
+			user.times++;
 			user.hash = '';
+			user.amount += reward;
 			user.last_request_at = new Date(Date.now());
 			await user.save();
 			return true;

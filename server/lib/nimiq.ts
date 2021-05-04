@@ -61,12 +61,7 @@ export default class Nimiq {
 			const tx = Nimiq.wallet.createTransaction(address, lunas, 0, Nimiq.blockchain.height);
 			await Nimiq.consensus.sendTransaction(tx);
 			const pay = new Pay({
-				ip: ip,
-				hash: user.hash,
-				lunas: lunas,
-				reward: reward,
-				hash_tx: tx.hash().toHex(),
-				recipient: address.toUserFriendlyAddress()
+				ip: ip, hash: user.hash, lunas: lunas, reward: reward, hash_tx: tx.hash().toHex(), recipient: address.toUserFriendlyAddress()
 			});
 			await pay.save();
 			user.times++;

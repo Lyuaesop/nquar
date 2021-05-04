@@ -1,7 +1,9 @@
 import parser from 'body-parser';
 import express from 'express';
+import https from 'https';
 import destr from 'destr';
 import cors from 'cors';
+import fs from 'fs';
 import nimiq from './nimiq';
 import User from './model/user';
 
@@ -128,7 +130,12 @@ export default class Runtime {
 		});
 		//
 		app.use(express.static(__dirname + '/../../public'));
-		app.listen(process.env.SERVER_PORT as string);
-		console.log('Server run OK...');
+		//
+		const key = fs.readFileSync(process.env.SSL_KEY_FILE_PATH as string);
+		const cert = fs.readFileSync(process.env.SSL_CERT_FILE_PATH as string);
+		const server = https.createServer({key: key, cert: cert}, app);
+		server.listen(process.env.SERVER_PORT as string, function () {
+			console.log('Server run OK...');
+		});
 	}
 }

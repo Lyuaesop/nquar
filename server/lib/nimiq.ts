@@ -76,11 +76,11 @@ export default class Nimiq {
 			user.amount += reward;
 			user.last_request_at = new Date(Date.now());
 			await user.save();
-			return true;
+			return reward;
 		} catch (error) {
 			await this.log(user.recipient, error.message, {hash: user.hash, level: level, ip: ip});
 		}
-		return false;
+		return 0;
 	}
 
 	public static checkRecipient(addr: string): nimiq.Address {

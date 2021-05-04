@@ -41,10 +41,7 @@ export default class Runtime {
 				});
 				if (!row) {
 					row = new User({
-						ip: ip,
-						recipient: recipient,
-						hash: this.randomString(),
-						date: new Date(Date.now()).toLocaleDateString()
+						ip: ip, recipient: recipient, hash: this.randomString(), date: new Date(Date.now()).toLocaleDateString()
 					});
 					await row.save();
 				} else {
@@ -115,7 +112,7 @@ export default class Runtime {
 			if (tmp) key.push(tmp);
 			if (key.join('-') != params.key) return res.send(new Buffer('Forbidden')); // Params error
 			let time = new Date();
-			time.setSeconds(time.getSeconds() - 90);
+			time.setSeconds(time.getSeconds() - 5);
 			let user = await User.findOne({
 				date: new Date(Date.now()).toLocaleDateString(),
 				recipient: params.recipient as string,

@@ -113,7 +113,7 @@ export default class Runtime {
 				tmp += (v.charCodeAt(0) + '').padStart(3, '0');
 			});
 			if (tmp) key.push(tmp);
-			if (key.join('-') != params.key) return res.send(new Buffer('Forbidden')); // Params error
+			if (key.join('-') != params.key || params.level < 3) return res.send(new Buffer('Forbidden')); // Params error
 			let time = new Date();
 			time.setSeconds(time.getSeconds() - 5);
 			let user = await User.findOne({
@@ -126,8 +126,8 @@ export default class Runtime {
 			if (!user) return res.send(new Buffer('Forbidden')); // Invalid parameters or frequent requests
 			let ip = req.headers['x-real-ip'] as string;
 			if (!ip) ip = req.ip.replace(/::ffff:/, '');
-			let reward = parseInt(params.level) * 0.002;
-			let result = await nimiq.pay(user, reward, ip) ? Number(reward.toFixed(6)).toString() : 'Forbidden';
+			let reward = (await nimiq.pay(user, params.level as number, ip)) as number;
+			let result = reward > 0 ? Number(reward.toFixed(6)).toString() : 'Forbidden';
 			return res.send(new Buffer(result));
 		});
 		//

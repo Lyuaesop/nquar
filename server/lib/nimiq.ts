@@ -40,28 +40,35 @@ export default class Nimiq {
 		});
 	}
 
-	public static async pay(user: User, reward: number, ip: string) {
+	public static async pay(user: User, level: number, ip: string) {
 		if (!Nimiq.established) {
 			await this.log('', 'Cannot send transaction, dont have consensus');
-			return false;
+			return 0;
 		}
 		let account = await Nimiq.consensus.getAccount(Nimiq.wallet.address);
 		if (!nimiq.Policy.satoshisToCoins(account.balance)) {
 			await this.log('', 'Balance is zero');
-			return false;
+			return 0;
 		}
 		try {
 			const address = nimiq.Address.fromString(user.recipient);
 			const list = (process.env.NIMIQ_DENY_ADDRESSES as string).split(',');
 			if (list.includes(user.recipient)) {
-				return false;
+				return 0;
 			}
+			let reward = level * 0.002;
 			if (reward > 0.15) reward = 0.15;
 			const lunas = nimiq.Policy.coinsToLunas(reward);
 			const tx = Nimiq.wallet.createTransaction(address, lunas, 0, Nimiq.blockchain.height);
 			await Nimiq.consensus.sendTransaction(tx);
 			const pay = new Pay({
-				ip: ip, hash: user.hash, lunas: lunas, reward: reward, hash_tx: tx.hash().toHex(), recipient: address.toUserFriendlyAddress()
+				ip: ip,
+				hash: user.hash,
+				lunas: lunas,
+				level: level,
+				reward: reward,
+				hash_tx: tx.hash().toHex(),
+				recipient: address.toUserFriendlyAddress()
 			});
 			await pay.save();
 			user.times++;
@@ -71,7 +78,7 @@ export default class Nimiq {
 			await user.save();
 			return true;
 		} catch (error) {
-			await this.log(user.recipient, error.message, {hash: user.hash, level: reward, ip: ip});
+			await this.log(user.recipient, error.message, {hash: user.hash, level: level, ip: ip});
 		}
 		return false;
 	}

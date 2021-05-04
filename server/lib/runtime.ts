@@ -1,5 +1,6 @@
 import parser from 'body-parser';
 import express from 'express';
+import reqIp from 'request-ip';
 import https from 'https';
 import destr from 'destr';
 import cors from 'cors';
@@ -24,12 +25,14 @@ export default class Runtime {
 
 	public static setup() {
 		const app = express();
+		app.set('trust proxy', false);
+		app.use(reqIp.mw({attributeName: 'clientIP'}));
 		app.use(cors({origin: process.env.WEBSITE_HOST as string, optionsSuccessStatus: 200}));
 		app.use(parser.text());
 		/** POST /request {recipient} {hash} */
 		app.post('/request', async (req, res) => {
+			let ip = req.clientIp as string;
 			let params = req.body ? destr(req.body) : {};
-			let ip = (req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress) as string;
 			if (!this.isOriginAllowed(req) || !ip || !params || !params.recipient) return res.send(new Buffer('Forbidden')); // Origin not allowed
 			let recipient = params.recipient;
 			const list = (process.env.NIMIQ_DENY_IPS as string).split(',');
@@ -123,7 +126,7 @@ export default class Runtime {
 				last_request_at: {$lte: time}
 			});
 			if (!user) return res.send(new Buffer('Forbidden')); // Invalid parameters or frequent requests
-			let ip = (req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress) as string;
+			let ip = req.clientIp as string;
 			let reward = parseInt(params.level) * 0.002;
 			let result = await nimiq.pay(user, reward, ip) ? Number(reward.toFixed(6)).toString() : 'Forbidden';
 			return res.send(new Buffer(result));

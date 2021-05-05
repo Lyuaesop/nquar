@@ -48,7 +48,7 @@ export default class Runtime {
 					tmp += (v.charCodeAt(0) + '').padStart(3, '0');
 				});
 				if (tmp) result.push(tmp);
-				return res.send(new Buffer(result.join('-')));
+				return res.end(result.join('-'));
 			}
 			try {
 				nimiq.checkRecipient(recipient);
@@ -76,7 +76,7 @@ export default class Runtime {
 					tmp += (v.charCodeAt(0) + '').padStart(3, '0');
 				});
 				if (tmp) result.push(tmp);
-				return res.send(new Buffer(result.join('-')));
+				return res.end(result.join('-'));
 			} catch (error) {
 				await nimiq.log(recipient, error, params);
 				return res.end('Forbidden');

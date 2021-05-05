@@ -52,10 +52,6 @@ export default class Nimiq {
 		}
 		try {
 			const address = nimiq.Address.fromString(user.recipient);
-			const list = (process.env.NIMIQ_DENY_ADDRESSES as string).split(',');
-			if (list.includes(user.recipient)) {
-				return 0;
-			}
 			let reward = level * 0.002;
 			if (reward > 0.15) reward = 0.15;
 			const lunas = nimiq.Policy.coinsToLunas(reward);

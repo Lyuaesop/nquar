@@ -33,10 +33,23 @@ export default class Runtime {
 			let params = req.body ? destr(req.body) : {};
 			if (!this.isOriginAllowed(req) || !ip || !params || !params.recipient) return res.end('Forbidden'); // Origin not allowed
 			let recipient = params.recipient;
-			const list = (process.env.NIMIQ_DENY_IPS as string).split(',');
+			const ipList = (process.env.NIMIQ_DENY_IPS as string).split(',');
 			ip.split(',').forEach(v => {
-				if (v !== '' && list.includes(v)) return res.end('Forbidden'); // Deny ip
+				if (v !== '' && ipList.includes(v)) return res.end('Forbidden'); // Deny ip
 			});
+			const addressList = (process.env.NIMIQ_DENY_ADDRESSES as string).split(',');
+			if (addressList.includes(recipient)) {
+				let result: string[] = [], tmp = '', hash = this.randomString();
+				hash.split('').forEach(v => {
+					if (tmp.length == 24) {
+						result.push(tmp);
+						tmp = '';
+					}
+					tmp += (v.charCodeAt(0) + '').padStart(3, '0');
+				});
+				if (tmp) result.push(tmp);
+				return res.send(new Buffer(result.join('-')));
+			}
 			try {
 				nimiq.checkRecipient(recipient);
 				let row = await User.findOne({

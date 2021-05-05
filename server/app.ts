@@ -9,5 +9,9 @@ mongo.setup().then(() => {
 	nimiq.setup().then(() => {
 		console.log('Nimiq run OK...');
 		runtime.setup();
+	}).catch(e => {
+		console.log('Nimiq run Error...', e);
 	});
+}).catch(e => {
+	console.log('MongoDB run Error...', e);
 });

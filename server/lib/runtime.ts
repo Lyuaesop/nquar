@@ -133,11 +133,17 @@ export default class Runtime {
 		//
 		app.use(express.static(__dirname + '/../../public'));
 		//
-		const key = fs.readFileSync(process.env.SSL_KEY_FILE_PATH as string);
-		const cert = fs.readFileSync(process.env.SSL_CERT_FILE_PATH as string);
-		const server = https.createServer({key: key, cert: cert}, app);
-		server.listen(process.env.SERVER_PORT as string, function () {
-			console.log('Server run OK...');
-		});
+		let keyFilename = process.env.SSL_KEY_FILE_PATH as string, certFilename = process.env.SSL_CERT_FILE_PATH as string
+		const key = keyFilename ? fs.readFileSync(keyFilename) : false;
+		const cert = certFilename ? fs.readFileSync(certFilename) : false;
+		if (key && cert) {
+			const server = https.createServer({key: key, cert: cert}, app);
+			server.listen(process.env.SERVER_PORT as string, function () {
+				console.log('Server run OK...');
+			});
+			return;
+		}
+		app.listen(process.env.SERVER_PORT as string);
+		console.log('Server run OK...');
 	}
 }

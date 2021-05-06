@@ -3,9 +3,6 @@ import Pay from './model/pay';
 import Log from './model/log';
 import {User} from './model/user';
 
-export type Request = {
-	recipient?: string, level?: number, hash?: string
-}
 export default class Nimiq {
 	public static consensus: nimiq.NanoConsensus;
 	public static blockchain: nimiq.NanoChain;

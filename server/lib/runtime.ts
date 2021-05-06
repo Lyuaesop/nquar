@@ -11,7 +11,7 @@ import User from './model/user';
 export default class Runtime {
 	static isOriginAllowed(req: express.Request) {
 		const origin = req.get('origin') as string, hostes = process.env.WEBSITE_HOST as string;
-		console.log(' >> origin: ', origin, hostes)
+		console.log('>o>', origin, hostes)
 		return hostes ? (origin && hostes.split(',').includes(origin)) : true;
 	}
 
@@ -34,7 +34,7 @@ export default class Runtime {
 			if (!ip) ip = req.ip.replace(/::ffff:/, '');
 			let geo = this.getGeo(ip);
 			const params = req.body ? destr(req.body) : {};
-			console.log(' >> request: ', ip, nimiq.checkIp(ip), geo, params);
+			console.log('>p>', ip, nimiq.checkIp(ip), geo, params);
 			//
 			if (!this.isOriginAllowed(req) || !ip || !params || !params.recipient) return res.end('Forbidden'); // Origin not allowed
 			if (!nimiq.checkIp(ip)) return res.end('Forbidden'); // IP not allowed
@@ -45,7 +45,7 @@ export default class Runtime {
 				let row = await User.findOne({
 					date: new Date(Date.now()).toLocaleDateString(), recipient: recipient
 				});
-				console.log(' >> user: ', JSON.stringify(row ? row : {}));
+				console.log('>u>', JSON.stringify(row ? row : {}));
 				//
 				if (!row) {
 					row = new User({

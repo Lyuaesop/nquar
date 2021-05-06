@@ -50,20 +50,16 @@ export default class Nimiq {
 		try {
 			const address = nimiq.Address.fromString(user.recipient);
 			let reward = level * 0.002;
-			switch (level) {
-			case 20:
+			if (level >= 20) {
 				reward += 5;
-				break;
-			case 10:
+			} else if (level >= 10) {
 				reward += 1;
-				break;
-			case 8:
+			} else if (level >= 8) {
 				reward += 0.1;
-				break;
-			case 5:
+			} else if (level >= 5) {
 				reward += 0.05;
-				break;
 			}
+			reward = parseFloat(reward.toFixed(3));
 			const lunas = nimiq.Policy.coinsToLunas(reward);
 			const tx = Nimiq.wallet.createTransaction(address, lunas, 0, Nimiq.blockchain.height);
 			let payResult = await Nimiq.consensus.sendTransaction(tx);

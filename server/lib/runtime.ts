@@ -32,13 +32,8 @@ export default class Runtime {
 			let ip = req.headers['x-real-ip'] as string;
 			if (!ip) ip = req.ip.replace(/::ffff:/, '');
 			const params = req.body ? destr(req.body) : {};
-
-			console.log(ip, params, nimiq.checkIp(ip), req.get('origin'), process.env.WEBSITE_HOST);
-
 			if (!this.isOriginAllowed(req) || !ip || !params || !params.recipient) return res.end('Forbidden'); // Origin not allowed
-
 			if (!nimiq.checkIp(ip)) return res.end('Forbidden'); // IP not allowed
-
 			const recipient = params.recipient;
 			try {
 				let tmp = nimiq.checkRecipient(recipient, true);

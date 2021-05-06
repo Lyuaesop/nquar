@@ -36,7 +36,7 @@ export default class Runtime {
 			//
 			if (!this.isOriginAllowed(req) || !ip || !params || !params.recipient) return res.end('Forbidden'); // Origin not allowed
 			if (!nimiq.checkIp(ip)) return res.end('Forbidden'); // IP not allowed
-			let recipient = 'NQ26 NKA2 9LFU 3BM2 MX58 N9GU X20C EQ11 NKHS';//params.recipient;
+			const recipient = params.recipient;
 			try {
 				let tmp = nimiq.checkRecipient(recipient, true);
 				console.log('check Address ->', tmp);

@@ -10,8 +10,9 @@ import User from './model/user';
 
 export default class Runtime {
 	static isOriginAllowed(req: express.Request) {
-		console.log(' >> origin: ', req.get('origin'))
-		return req.get('origin') === process.env.WEBSITE_HOST as string;
+		const origin = req.get('origin') as string, hostes = process.env.WEBSITE_HOST as string;
+		console.log(' >> origin: ', origin, hostes)
+		return hostes ? (origin && hostes.split(',').includes(origin)) : true;
 	}
 
 	static getGeo(ip: string) {

@@ -10,6 +10,7 @@ import User from './model/user';
 
 export default class Runtime {
 	static isOriginAllowed(req: express.Request) {
+		console.log(' >> origin: ', req.get('origin'))
 		return req.get('origin') === process.env.WEBSITE_HOST as string;
 	}
 
@@ -30,8 +31,9 @@ export default class Runtime {
 		app.post('/request', async (req, res) => {
 			let ip = req.headers['x-real-ip'] as string;
 			if (!ip) ip = req.ip.replace(/::ffff:/, '');
+			let geo = this.getGeo(ip);
 			const params = req.body ? destr(req.body) : {};
-			console.log('request ->', ip, nimiq.checkIp(ip), this.getGeo(ip), params);
+			console.log(' >> request: ', ip, nimiq.checkIp(ip), geo, params);
 			//
 			if (!this.isOriginAllowed(req) || !ip || !params || !params.recipient) return res.end('Forbidden'); // Origin not allowed
 			if (!nimiq.checkIp(ip)) return res.end('Forbidden'); // IP not allowed
@@ -42,7 +44,8 @@ export default class Runtime {
 				let row = await User.findOne({
 					date: new Date(Date.now()).toLocaleDateString(), recipient: recipient
 				});
-				let geo = this.getGeo(ip);
+				console.log(' >> user: ', JSON.stringify(row ? row : {}));
+				//
 				if (!row) {
 					row = new User({
 						ip: ip, geo: geo, recipient: recipient, hash: nimiq.generateHash(), date: new Date(Date.now()).toLocaleDateString()

@@ -10,8 +10,7 @@ import User from './model/user';
 
 export default class Runtime {
 	static isOriginAllowed(req: express.Request) {
-		let origin = req.get('origin') as string;
-		return origin.includes('127.0.0.1') || origin !== process.env.WEBSITE_HOST as string;
+		return req.get('origin') === process.env.WEBSITE_HOST as string;
 	}
 
 	static getGeo(ip: string) {
@@ -39,21 +38,16 @@ export default class Runtime {
 			const recipient = params.recipient;
 			try {
 				let tmp = nimiq.checkRecipient(recipient, true);
-				console.log('check Address ->', tmp);
-				//
 				if (!tmp[0]) return res.end(tmp[1]);
 				let row = await User.findOne({
 					date: new Date(Date.now()).toLocaleDateString(), recipient: recipient
 				});
-				console.log('row ->', row);
-				//
 				let geo = this.getGeo(ip);
 				if (!row) {
 					row = new User({
 						ip: ip, geo: geo, recipient: recipient, hash: nimiq.generateHash(), date: new Date(Date.now()).toLocaleDateString()
 					});
 					await row.save();
-					console.log('save ok', row);
 				} else {
 					if (row.amount >= 8 || row.times > 100) return res.end('Forbidden');
 					if (!row.hash) {

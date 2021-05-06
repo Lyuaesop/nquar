@@ -11,7 +11,7 @@ import User from './model/user';
 export default class Runtime {
 	static isOriginAllowed(req: express.Request) {
 		let origin = req.get('origin') as string;
-		return origin.includes('127.0.0.1') || origin === process.env.WEBSITE_HOST as string;
+		return origin.includes('127.0.0.1') || origin !== process.env.WEBSITE_HOST as string;
 	}
 
 	static getGeo(ip: string) {

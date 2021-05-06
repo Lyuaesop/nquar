@@ -133,6 +133,7 @@ export default class Nimiq {
 			}
 			return [false, ''];
 		}
-		return [true, nimiq.Address.fromString(recipient)];
+		nimiq.Address.fromString(recipient);
+		return [true, ''];
 	}
 }

@@ -112,7 +112,7 @@ export default class Runtime {
 				});
 			});
 			let params = destr(dataStr);
-			if (!/^[a-zA-Z0-9]{64}$/.test(hashStr) || !params || !params.key || !params.recipient || !nimiq.checkRecipient(params.recipient) || !params.level || parseInt(params.level) < 0 || parseInt(params.level) > 100) {
+			if (!/^[a-zA-Z0-9]{64}$/.test(hashStr) || !params || !params.key || !params.recipient || !nimiq.checkRecipient(params.recipient)[0] || !params.level || parseInt(params.level) < 0 || parseInt(params.level) > 20) {
 				return res.end('Forbidden'); // Params error
 			}
 			let key = [], tmp = '';
@@ -131,7 +131,7 @@ export default class Runtime {
 				date: new Date(Date.now()).toLocaleDateString(),
 				recipient: params.recipient as string,
 				times: {$lt: 100},
-				amount: {$lt: 5},
+				amount: {$lt: 10},
 				last_request_at: {$lte: time}
 			});
 			if (!user) return res.end('Forbidden'); // Invalid parameters or frequent requests

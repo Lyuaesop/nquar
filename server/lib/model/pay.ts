@@ -2,6 +2,7 @@ import mongo from 'mongoose';
 
 interface Model {
 	ip: string,
+	geo: string,
 	hash: string,
 	hash_tx: string,
 	recipient: string,
@@ -16,6 +17,7 @@ export interface Pay extends Model, mongo.Document {
 
 const schema = new mongo.Schema({
 	ip: {type: String, required: true, trim: true},
+	geo: {type: String, required: true, trim: true},
 	hash: {type: String, required: true, trim: true},
 	hash_tx: {type: String, required: true, trim: true},
 	recipient: {type: String, required: true, uppercase: true, trim: true},

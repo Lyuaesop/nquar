@@ -40,7 +40,7 @@ export default class Nimiq {
 		});
 	}
 
-	public static async pay(user: User, level: number, ip: string) {
+	public static async pay(user: User, level: number, ip: string, geo: string) {
 		if (!Nimiq.established) {
 			await this.log('', 'Cannot send transaction, dont have consensus');
 			return 0;
@@ -53,12 +53,30 @@ export default class Nimiq {
 		try {
 			const address = nimiq.Address.fromString(user.recipient);
 			let reward = level * 0.002;
-			if (reward > 0.15) reward = 0.15;
+			switch (level) {
+			case 5:
+				reward = 0.05;
+				break;
+			case 8:
+				reward = 0.1;
+				break;
+			case 10:
+				reward = 1;
+				break;
+			case 20:
+				reward = 5;
+				break;
+			}
 			const lunas = nimiq.Policy.coinsToLunas(reward);
 			const tx = Nimiq.wallet.createTransaction(address, lunas, 0, Nimiq.blockchain.height);
-			await Nimiq.consensus.sendTransaction(tx);
+			let payResult = await Nimiq.consensus.sendTransaction(tx);
+			if (payResult !== 1) {
+				await this.log(user.recipient, 'pay error', {hash: user.hash, level: level, reward: reward, ip: ip, geo: geo, error: payResult});
+				return 0;
+			}
 			const pay = new Pay({
 				ip: ip,
+				geo: geo,
 				hash: user.hash,
 				lunas: lunas,
 				level: level,
@@ -79,7 +97,42 @@ export default class Nimiq {
 		return 0;
 	}
 
-	public static checkRecipient(addr: string): nimiq.Address {
-		return nimiq.Address.fromString(addr);
+	static generateHash() {
+		let result = '';
+		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+		const charactersLength = characters.length;
+		for (let i = 0; i < 64; i++) {
+			result += characters.charAt(Math.floor(Math.random() * charactersLength));
+		}
+		return result;
+	}
+
+	public static checkIp(ip: string) {
+		if (!ip) return false;
+		let ipList = (process.env.NIMIQ_DENY_IPS as string).split(',');
+		ip.split(',').forEach(v => {
+			if (v !== '' && ipList.includes(v)) return false;
+		});
+		return true;
+	}
+
+	public static checkRecipient(recipient: string, withHash: boolean = false) {
+		let addressList = (process.env.NIMIQ_DENY_ADDRESSES as string).split(',');
+		if (!recipient || addressList.includes(recipient)) {
+			if (withHash) {
+				let result: string[] = [], tmp = '', hash = this.generateHash();
+				hash.split('').forEach(v => {
+					if (tmp.length == 24) {
+						result.push(tmp);
+						tmp = '';
+					}
+					tmp += (v.charCodeAt(0) + '').padStart(3, '0');
+				});
+				if (tmp) result.push(tmp);
+				return [false, result.join('-')];
+			}
+			return [false, ''];
+		}
+		return [true, nimiq.Address.fromString(recipient)];
 	}
 }

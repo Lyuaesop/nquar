@@ -2,6 +2,7 @@ import mongo from 'mongoose';
 
 interface Model {
 	ip: string,
+	geo: string,
 	date: string,
 	times: number,
 	amount: number,
@@ -16,6 +17,7 @@ export interface User extends Model, mongo.Document {
 
 const schema = new mongo.Schema({
 	ip: {type: String, required: true, trim: true},
+	geo: {type: String, required: true, trim: true},
 	date: {type: String, required: true, trim: true},
 	times: {type: Number, default: 0, min: 0},
 	amount: {type: Number, default: 0, min: 0, max: 20},

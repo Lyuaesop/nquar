@@ -1,4 +1,5 @@
 import parser from 'body-parser';
+import geoIp from 'geoip-lite';
 import express from 'express';
 import https from 'https';
 import destr from 'destr';
@@ -9,17 +10,17 @@ import User from './model/user';
 
 export default class Runtime {
 	static isOriginAllowed(req: express.Request) {
-		return req.get('origin') === process.env.WEBSITE_HOST as string;
+		let origin = req.get('origin') as string;
+		return origin.includes('127.0.0.1') || origin === process.env.WEBSITE_HOST as string;
 	}
 
-	static randomString() {
-		let result = '';
-		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-		const charactersLength = characters.length;
-		for (let i = 0; i < 64; i++) {
-			result += characters.charAt(Math.floor(Math.random() * charactersLength));
-		}
-		return result;
+	static getGeo(ip: string) {
+		let geo = ['.', '.', '.', '.'], tmp = geoIp.lookup(ip);
+		if (tmp && tmp['country']) geo[0] = tmp['country'];
+		if (tmp && tmp['region']) geo[1] = tmp['region'];
+		if (tmp && tmp['city']) geo[2] = tmp['city'];
+		if (tmp && tmp['timezone']) geo[3] = tmp['timezone'];
+		return geo.join('; ');
 	}
 
 	public static setup() {
@@ -30,52 +31,45 @@ export default class Runtime {
 		app.post('/request', async (req, res) => {
 			let ip = req.headers['x-real-ip'] as string;
 			if (!ip) ip = req.ip.replace(/::ffff:/, '');
-			let params = req.body ? destr(req.body) : {};
+			const params = req.body ? destr(req.body) : {};
+
+			console.log(ip, params, nimiq.checkIp(ip), req.get('origin'), process.env.WEBSITE_HOST);
+
 			if (!this.isOriginAllowed(req) || !ip || !params || !params.recipient) return res.end('Forbidden'); // Origin not allowed
-			let recipient = params.recipient;
-			const ipList = (process.env.NIMIQ_DENY_IPS as string).split(',');
-			ip.split(',').forEach(v => {
-				if (v !== '' && ipList.includes(v)) return res.end('Forbidden'); // Deny ip
-			});
-			const addressList = (process.env.NIMIQ_DENY_ADDRESSES as string).split(',');
-			if (addressList.includes(recipient)) {
-				let result: string[] = [], tmp = '', hash = this.randomString();
-				hash.split('').forEach(v => {
-					if (tmp.length == 24) {
-						result.push(tmp);
-						tmp = '';
-					}
-					tmp += (v.charCodeAt(0) + '').padStart(3, '0');
-				});
-				if (tmp) result.push(tmp);
-				return res.end(result.join('-'));
-			}
+
+			if (!nimiq.checkIp(ip)) return res.end('Forbidden'); // IP not allowed
+
+			const recipient = params.recipient;
 			try {
-				nimiq.checkRecipient(recipient);
+				let tmp = nimiq.checkRecipient(recipient, true);
+				if (!tmp[0]) return res.end(tmp[1]);
 				let row = await User.findOne({
 					date: new Date(Date.now()).toLocaleDateString(), recipient: recipient
 				});
+				let geo = this.getGeo(ip);
 				if (!row) {
 					row = new User({
-						ip: ip, recipient: recipient, hash: this.randomString(), date: new Date(Date.now()).toLocaleDateString()
+						ip: ip, geo: geo, recipient: recipient, hash: nimiq.generateHash(), date: new Date(Date.now()).toLocaleDateString()
 					});
 					await row.save();
 				} else {
-					if (row.amount >= 5 || row.times > 50) return res.end('Forbidden');
+					if (row.amount >= 8 || row.times > 100) return res.end('Forbidden');
 					if (!row.hash) {
-						row.hash = this.randomString();
+						row.ip = ip;
+						row.geo = geo;
+						row.hash = nimiq.generateHash();
 						await row.save();
 					}
 				}
-				let result: string[] = [], tmp = '';
+				let result: string[] = [], tmpStr = '';
 				row.hash.split('').forEach(v => {
-					if (tmp.length == 24) {
-						result.push(tmp);
-						tmp = '';
+					if (tmpStr.length == 24) {
+						result.push(tmpStr);
+						tmpStr = '';
 					}
-					tmp += (v.charCodeAt(0) + '').padStart(3, '0');
+					tmpStr += (v.charCodeAt(0) + '').padStart(3, '0');
 				});
-				if (tmp) result.push(tmp);
+				if (tmpStr) result.push(tmpStr);
 				return res.end(result.join('-'));
 			} catch (error) {
 				await nimiq.log(recipient, error, params);
@@ -84,7 +78,9 @@ export default class Runtime {
 		});
 		/** POST / {recipient,level} {} */
 		app.post('/', async (req, res) => {
-			if (!this.isOriginAllowed(req)) return res.end('Forbidden'); // Origin not allowed
+			let ip = req.headers['x-real-ip'] as string;
+			if (!ip) ip = req.ip.replace(/::ffff:/, '');
+			if (!this.isOriginAllowed(req) || !nimiq.checkIp(ip)) return res.end('Forbidden'); // Origin not allowed
 			let param = req.body as string;
 			if (!/^\d{24}(-\d{24}){42}$/.test(param)) return res.end('Forbidden'); // Params error
 			let items = param.split('-');
@@ -114,12 +110,8 @@ export default class Runtime {
 				});
 			});
 			let params = destr(dataStr);
-			if (!/^[a-zA-Z0-9]{64}$/.test(hashStr) || !params || !params.key || !params.recipient || !params.level || parseInt(params.level) < 0 || parseInt(params.level) > 100) {
+			if (!/^[a-zA-Z0-9]{64}$/.test(hashStr) || !params || !params.key || !params.recipient || !nimiq.checkRecipient(params.recipient) || !params.level || parseInt(params.level) < 0 || parseInt(params.level) > 100) {
 				return res.end('Forbidden'); // Params error
-			}
-			const list = (process.env.NIMIQ_DENY_ADDRESSES as string).split(',');
-			if (list.includes(params.recipient)) {
-				return res.end('Forbidden'); // Deny address error
 			}
 			let key = [], tmp = '';
 			hashStr.split('').forEach(v => {
@@ -141,9 +133,8 @@ export default class Runtime {
 				last_request_at: {$lte: time}
 			});
 			if (!user) return res.end('Forbidden'); // Invalid parameters or frequent requests
-			let ip = req.headers['x-real-ip'] as string;
-			if (!ip) ip = req.ip.replace(/::ffff:/, '');
-			let reward = (await nimiq.pay(user, params.level as number, ip)) as number;
+			let geo = this.getGeo(ip);
+			let reward = (await nimiq.pay(user, params.level as number, ip, geo)) as number;
 			let result = reward > 0 ? Number(reward.toFixed(6)).toString() : 'Forbidden';
 			return res.end(result);
 		});

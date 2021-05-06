@@ -1,5 +1,4 @@
 import mongo from 'mongoose';
-import Log from './model/log';
 
 export default class Mongo {
 	public static async setup() {

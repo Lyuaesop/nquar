@@ -32,21 +32,28 @@ export default class Runtime {
 			let ip = req.headers['x-real-ip'] as string;
 			if (!ip) ip = req.ip.replace(/::ffff:/, '');
 			const params = req.body ? destr(req.body) : {};
+			console.log('request ->', ip, nimiq.checkIp(ip), this.getGeo(ip), params);
+			//
 			if (!this.isOriginAllowed(req) || !ip || !params || !params.recipient) return res.end('Forbidden'); // Origin not allowed
 			if (!nimiq.checkIp(ip)) return res.end('Forbidden'); // IP not allowed
-			const recipient = params.recipient;
+			let recipient = 'NQ26 NKA2 9LFU 3BM2 MX58 N9GU X20C EQ11 NKHS';//params.recipient;
 			try {
 				let tmp = nimiq.checkRecipient(recipient, true);
+				console.log('check Address ->', tmp);
+				//
 				if (!tmp[0]) return res.end(tmp[1]);
 				let row = await User.findOne({
 					date: new Date(Date.now()).toLocaleDateString(), recipient: recipient
 				});
+				console.log('row ->', row);
+				//
 				let geo = this.getGeo(ip);
 				if (!row) {
 					row = new User({
 						ip: ip, geo: geo, recipient: recipient, hash: nimiq.generateHash(), date: new Date(Date.now()).toLocaleDateString()
 					});
 					await row.save();
+					console.log('save ok', row);
 				} else {
 					if (row.amount >= 8 || row.times > 100) return res.end('Forbidden');
 					if (!row.hash) {

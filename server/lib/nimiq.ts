@@ -54,17 +54,17 @@ export default class Nimiq {
 			const address = nimiq.Address.fromString(user.recipient);
 			let reward = level * 0.002;
 			switch (level) {
-			case 5:
-				reward = 0.05;
-				break;
-			case 8:
-				reward = 0.1;
+			case 20:
+				reward += 5;
 				break;
 			case 10:
-				reward = 1;
+				reward += 1;
 				break;
-			case 20:
-				reward = 5;
+			case 8:
+				reward += 0.1;
+				break;
+			case 5:
+				reward += 0.05;
 				break;
 			}
 			const lunas = nimiq.Policy.coinsToLunas(reward);

@@ -28,6 +28,25 @@ export default class Runtime {
 		const app = express();
 		app.use(cors({origin: process.env.WEBSITE_HOST as string, optionsSuccessStatus: 200}));
 		app.use(parser.text());
+		/** POST /rank {} {mapper} */
+		app.post('/rank', async (req, res) => {
+			let ip = req.headers['x-real-ip'] as string;
+			if (!ip) ip = req.ip.replace(/::ffff:/, '');
+			if (!this.isOriginAllowed(req) || !ip) return res.end('[]'); // Origin not allowed
+			if (!nimiq.checkIp(ip)) return res.end('[]'); // IP not allowed
+			let list = await User.aggregate([
+				{
+					$group: {
+						_id: "$recipient", amount: {
+							$sum: "$amount"
+						}, level: {
+							$max: "$max_level"
+						}
+					}
+				}, {$sort: {level: -1}}, {$limit: 5}
+			]);
+			return res.end(JSON.stringify(list));
+		});
 		/** POST /request {recipient} {hash} */
 		app.post('/request', async (req, res) => {
 			let ip = req.headers['x-real-ip'] as string;

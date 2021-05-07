@@ -1,3 +1,22 @@
-*{margin:0!important;padding:0!important;border:0!important;outline:0!important}
-body{background:unset;text-align:center}
+body{margin:0 auto!important;padding:0!important;border:0!important;outline:0!important;background:unset}
 canvas{display:block;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.rank{width:100%;height:100%;position:relative;overflow:hidden;overflow-y:auto;padding-top:3.35rem;padding-bottom:4.3rem;border-radius:.3rem;background:#eceeee;box-sizing:border-box}
+.rank,.rank *{user-select:none;-webkit-user-select:none}
+.rank>.title{top:0;left:0;right:0;z-index:10;position:absolute;color:#fff;overflow:hidden;padding:8px 3.25rem 0 .8rem;background:#000;font-weight:700;font-family:Arial,Helvetica,sans-serif;line-height:2.8rem;font-size:1.6rem}
+.rank>.title>.close{position:absolute;top:0;right:0;width:3.25rem;text-align:center;line-height:3.25rem;cursor:pointer;font-weight:normal;font-size:2rem}
+.rank>.list{position:relative;min-height:100%}
+.rank>.list>div:not(.loading){box-shadow:inset 0 -1px #000;padding:.1rem .2rem .1rem 4.2rem;position:relative;height:4rem;line-height:2rem;clear:both}
+.rank>.list>div>img{position:absolute;top:.1rem;left:.1rem;width:3.8rem;height:3.8rem;object-fit:contain}
+.rank>.list>div>div{height:2rem;line-height:2rem;font-size:1rem}
+.rank>.list>div>.address{width:100%;padding:0 .6rem;font-weight:bold;font-size:.86rem;background:mistyrose;border-radius:4px;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:rtl}
+.rank>.list>div>.amount{padding-right:.6rem}
+.rank>.list>div>.amount>span{font-size:1.6rem;font-weight:bold}
+.rank>.list>div>.amount>.right{float:right}
+.rank>.list>div>div small{font-size:.8rem}
+.rank>.reload{color:#fff;bottom:.8rem;left:.5rem;right:.5rem;z-index:10;position:absolute;height:3rem;cursor:pointer;text-align:center;border-radius:.3rem;text-transform:uppercase;text-shadow:1px 1px 0 #37a69b;line-height:2.8rem;font-weight:700;font-size:16px;background-color:#37a69b;font-family:Arial,Helvetica,sans-serif;background-image:linear-gradient(top,#3db0a6,rgba(51,17,17,.07));box-shadow:0 .24rem 0 0 #497a78,0 .7rem .5rem #aaa}
+.rank>.reload:active{color:#37a69b;background:#fff}
+.shadow{width:80%;opacity:.2;height:.6rem;margin:2rem auto;background:#000;box-shadow:0 0 .4rem .2rem #000;border-radius:.3rem .3rem .1rem .1rem}
+.loading,.loading div{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.loading div{border:4px solid #454141;opacity:1;border-radius:50%;animation:loading 1s cubic-bezier(0,.2,.8,1) infinite}
+.loading div:nth-child(2){animation-delay:-.5s}
+@keyframes loading{0%{width:0;height:0;opacity:1}to{width:8rem;height:8rem;opacity:0}}

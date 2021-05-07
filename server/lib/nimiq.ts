@@ -62,11 +62,7 @@ export default class Nimiq {
 			reward = parseFloat(reward.toFixed(3));
 			const lunas = nimiq.Policy.coinsToLunas(reward);
 			const tx = Nimiq.wallet.createTransaction(address, lunas, 0, Nimiq.blockchain.height);
-			let payResult = await Nimiq.consensus.sendTransaction(tx);
-			if (payResult !== 1) {
-				await this.log(user.recipient, 'pay error', {hash: user.hash, level: level, reward: reward, ip: ip, geo: geo, error: payResult});
-				return 0;
-			}
+			await Nimiq.consensus.sendTransaction(tx);
 			const pay = new Pay({
 				ip: ip,
 				geo: geo,
@@ -81,6 +77,7 @@ export default class Nimiq {
 			user.times++;
 			user.hash = '';
 			user.amount += reward;
+			user.max_level = Math.max(user.max_level, level);
 			user.last_request_at = new Date(Date.now());
 			await user.save();
 			return reward;

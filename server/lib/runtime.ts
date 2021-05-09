@@ -164,10 +164,21 @@ export default class Runtime {
 		const key = keyFilename ? fs.readFileSync(keyFilename) : false;
 		const cert = certFilename ? fs.readFileSync(certFilename) : false;
 		if (key && cert) {
+
 			const server = https.createServer({key: key, cert: cert}, app);
 			server.listen(process.env.SERVER_PORT as string, function () {
 				console.log('Server run OK...');
 			});
+
+			const app2 = express();
+			app2.all('*', (req, res) => {
+				let host = req.headers.host as string;
+				console.log('80 host', host);
+				host = host.replace(/\:\d+$/, '');
+				res.redirect(307, `https://${host}${req.path}`);
+			});
+			app2.listen('80');
+
 			return;
 		}
 		app.listen(process.env.SERVER_PORT as string);

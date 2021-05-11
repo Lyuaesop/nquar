@@ -5,34 +5,38 @@
   "description": "Entertain and earn more coins.",
   "main": "/dist/app.js",
   "scripts": {
-	"test": "echo \"Error: no test specified\" && exit 1"
+    "prebuild": "git pull && npm update",
+    "build": "tsc"
   },
   "repository": {
-	"type": "git",
-	"url": "git+https://github.com/Lyuaesop/nquar.git"
+    "type": "git",
+    "url": "git+https://github.com/Lyuaesop/nquar.git"
   },
   "author": "lyuaesop@gmail.com",
   "license": "ISC",
   "bugs": {
-	"url": "https://github.com/Lyuaesop/nquar/issues"
+    "url": "https://github.com/Lyuaesop/nquar/issues"
   },
-  "homepage": "https://github.com/Lyuaesop/nquar#readme",
+  "homepage": "https://nquar.com",
   "dependencies": {
-	"@nimiq/core": "^1.5.5",
-	"@nimiq/identicons": "^1.6.0",
-	"@types/cors": "^2.8.6",
-	"@types/dotenv": "^8.2.0",
-	"@types/express": "^4.17.6",
-	"@types/geoip-lite": "^1.4.1",
-	"@types/mongoose": "^5.7.11",
-	"@types/node": "^13.11.1",
-	"body-parser": "^1.19.0",
-	"cors": "^2.8.5",
-	"destr": "^1.1.0",
-	"dotenv": "^8.2.0",
-	"express": "^4.17.1",
-	"geoip-lite": "^1.4.2",
-	"mongoose": "^5.9.9",
-	"typescript": "^3.8.3"
+    "@nimiq/core": "^1.5.8",
+    "@types/cors": "^2.8.10",
+    "@types/dotenv": "^8.2.0",
+    "@types/express": "^4.17.11",
+    "@types/geoip-lite": "^1.4.1",
+    "@types/mongoose": "^5.10.5",
+    "@types/node": "^15.0.2",
+    "@types/node-fetch": "^2.5.10",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "destr": "^1.1.0",
+    "dotenv": "^9.0.2",
+    "express": "^4.17.1",
+    "geoip-lite": "^1.4.2",
+    "mongoose": "^5.12.8",
+    "node-fetch": "^2.6.1",
+    "node-html-parser": "^3.2.0",
+    "typescript": "^4.2.4",
+    "uglify-js": "^3.13.6"
   }
 }

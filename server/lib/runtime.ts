@@ -1,4 +1,6 @@
-import parser from 'body-parser';
+import htmlParser from 'node-html-parser';
+import bodyParser from 'body-parser';
+import fetch from 'node-fetch';
 import geoIp from 'geoip-lite';
 import express from 'express';
 import https from 'https';
@@ -9,12 +11,6 @@ import nimiq from './nimiq';
 import User from './model/user';
 
 export default class Runtime {
-	static isOriginAllowed(req: express.Request) {
-		const origin = req.get('origin') as string, hostes = process.env.WEBSITE_HOST as string;
-		console.log('>o>', origin, hostes)
-		return hostes ? (origin && hostes.split(',').includes(origin)) : true;
-	}
-
 	static getGeo(ip: string) {
 		let geo = ['.', '.', '.', '.'], tmp = geoIp.lookup(ip);
 		if (tmp && tmp['country']) geo[0] = tmp['country'];
@@ -26,14 +22,64 @@ export default class Runtime {
 
 	public static setup() {
 		const app = express();
-		app.use(cors({origin: process.env.WEBSITE_HOST as string, optionsSuccessStatus: 200}));
-		app.use(parser.text());
+		app.use(cors({
+			origin: function (origin, callback) {
+				const hostes = process.env.WEBSITE_HOST as string;
+				let isAllowed = hostes && origin ? hostes.split(',').includes(origin) : true;
+				if (isAllowed) {
+					callback(null, true);
+					return;
+				}
+				callback(new Error('Not allowed by CORS'))
+			}, optionsSuccessStatus: 200
+		}));
+		app.use(bodyParser.text());
+		/** POST /fetch {} {mapper} */
+		app.get('/fetch', async (req, res) => {
+			let ip = req.headers['x-real-ip'] as string;
+			if (!ip) ip = req.ip.replace(/::ffff:/, '');
+			if (!ip || !nimiq.checkIp(ip)) return res.end('{}'); // IP not allowed
+			let blogs: string[] = [], download = '';
+			let body = await fetch('https://www.nimiq.com/blog/').then(r => r.text());
+			if (body) {
+				body = body.replace(/’/g, '\'').replace(/\n/g, '').replace(/<(?:head)([\s\S]*?)<\/(?:head)>/g, '')
+				           .replace(/<(?:footer)([\s\S]*?)<\/(?:footer)>/g, '').replace(/<(?:header)([\s\S]*?)<\/(?:header)>/g, '');
+				let $body = htmlParser(body);
+				let $blogs = $body.querySelectorAll('a.card.clickable');
+				if ($blogs && $blogs.length > 0) {
+					$blogs.forEach(($e, k) => {
+						if (k > 4) return;
+						let $img = $e.querySelector('.vts-img>noscript');
+						let img = $img ? $img.innerHTML.replace(/\n/g, '').replace('src="/', 'src="https://www.nimiq.com/') : '';
+						let title = $e.querySelector('.info-top').innerHTML.replace(/\n/g, '');
+						let href = 'https://www.nimiq.com/' + $e.getAttribute('href');
+						blogs.push(`<a href="${href}" target="_blank">${img}${title}</a>`);
+					});
+				}
+			}
+			body = await fetch('https://trustwallet.com/').then(r => r.text());
+			if (body) {
+				body = body.replace(/<(?:link)([\s\S]*?)<\/(?:link)>/g, '').replace(/<(?:nav)([\s\S]*?)<\/(?:nav)>/g, '')
+				           .replace(/<(?:main)([\s\S]*?)<\/(?:main)>/g, '').replace(/<(?:footer)([\s\S]*?)<\/(?:footer)>/g, '')
+				           .replace(/<(?:noscript)([\s\S]*?)<\/(?:noscript)>/g, '');
+				let $body = htmlParser(body);
+				let $title = $body.querySelector('section.bg-light .align-items-center>.text-lg-left');
+				let $icons = $body.querySelectorAll('section.bg-light .align-items-center .download a');
+				if ($title && $icons && $icons.length > 0) {
+					download = $title.innerHTML.replace(/\n/g, '');
+					$icons.forEach($e => {
+						$e.setAttribute('target', '_blank');
+					});
+					download += $body.querySelector('section.bg-light .align-items-center .download').outerHTML.replace(/\n/g, '');
+				}
+			}
+			return res.end(JSON.stringify({blogs: blogs, download: download}));
+		});
 		/** POST /rank {} {mapper} */
 		app.post('/rank', async (req, res) => {
 			let ip = req.headers['x-real-ip'] as string;
 			if (!ip) ip = req.ip.replace(/::ffff:/, '');
-			if (!this.isOriginAllowed(req) || !ip) return res.end('[]'); // Origin not allowed
-			if (!nimiq.checkIp(ip)) return res.end('[]'); // IP not allowed
+			if (!ip || !nimiq.checkIp(ip)) return res.end('[]'); // IP not allowed
 			let list = await User.aggregate([
 				{
 					$group: {
@@ -43,7 +89,7 @@ export default class Runtime {
 							$max: "$max_level"
 						}
 					}
-				}, {$sort: {level: -1}}, {$limit: 5}
+				}, {$sort: {level: -1, amount: -1}}, {$limit: 8}
 			]);
 			return res.end(JSON.stringify(list));
 		});
@@ -53,10 +99,7 @@ export default class Runtime {
 			if (!ip) ip = req.ip.replace(/::ffff:/, '');
 			let geo = this.getGeo(ip);
 			const params = req.body ? destr(req.body) : {};
-			console.log('>p>', ip, nimiq.checkIp(ip), geo, params);
-			//
-			if (!this.isOriginAllowed(req) || !ip || !params || !params.recipient) return res.end('Forbidden'); // Origin not allowed
-			if (!nimiq.checkIp(ip)) return res.end('Forbidden'); // IP not allowed
+			if (!ip || !nimiq.checkIp(ip) || !params || !params.recipient) return res.end('Forbidden'); // IP or params not allowed
 			const recipient = params.recipient;
 			try {
 				let tmp = nimiq.checkRecipient(recipient, true);
@@ -64,8 +107,6 @@ export default class Runtime {
 				let row = await User.findOne({
 					date: new Date(Date.now()).toLocaleDateString(), recipient: recipient
 				});
-				console.log('>u>', JSON.stringify(row ? row : {}));
-				//
 				if (!row) {
 					row = new User({
 						ip: ip, geo: geo, recipient: recipient, hash: nimiq.generateHash(), date: new Date(Date.now()).toLocaleDateString()
@@ -99,7 +140,7 @@ export default class Runtime {
 		app.post('/', async (req, res) => {
 			let ip = req.headers['x-real-ip'] as string;
 			if (!ip) ip = req.ip.replace(/::ffff:/, '');
-			if (!this.isOriginAllowed(req) || !nimiq.checkIp(ip)) return res.end('Forbidden'); // Origin not allowed
+			if (!ip || !nimiq.checkIp(ip)) return res.end('Forbidden'); // Ip not allowed
 			let param = req.body as string;
 			if (!/^\d{24}(-\d{24}){42}$/.test(param)) return res.end('Forbidden'); // Params error
 			let items = param.split('-');
@@ -164,12 +205,10 @@ export default class Runtime {
 		const key = keyFilename ? fs.readFileSync(keyFilename) : false;
 		const cert = certFilename ? fs.readFileSync(certFilename) : false;
 		if (key && cert) {
-
 			const server = https.createServer({key: key, cert: cert}, app);
 			server.listen(process.env.SERVER_PORT as string, function () {
 				console.log('Server run OK...');
 			});
-
 			const app2 = express();
 			app2.all('*', (req, res) => {
 				let host = req.headers.host as string;
@@ -178,7 +217,6 @@ export default class Runtime {
 				res.redirect(307, `https://${host}${req.path}`);
 			});
 			app2.listen('80');
-
 			return;
 		}
 		app.listen(process.env.SERVER_PORT as string);

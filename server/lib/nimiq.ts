@@ -48,6 +48,7 @@ export default class Nimiq {
 			return 0;
 		}
 		try {
+			if (!user.hash) return 0;
 			const address = nimiq.Address.fromString(user.recipient);
 			let reward = level * 0.002;
 			if (level >= 20) {

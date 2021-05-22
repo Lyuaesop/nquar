@@ -211,7 +211,7 @@ export default class Runtime {
 			});
 			const app2 = express();
 			app2.all('*', (req, res) => {
-				let host = (process.env.WEBSITE_HOST as string).split(',')[0].replace('http', 'https');
+				let host = (process.env.WEBSITE_HOST as string).split(',')[0].replace('http://', 'https://');
 				res.redirect(307, `${host}${req.path}`);
 			});
 			app2.listen('80');

@@ -184,7 +184,15 @@ export default class Runtime {
 			if (tmp) key.push(tmp);
 			if (key.join('-') != params.key || params.level < 3) return res.end('Forbidden'); // Params error
 			let time = new Date();
-			time.setSeconds(time.getSeconds() - 5);
+			let seconds = 10;
+			if(params.level > 3) seconds = 40;
+			if(params.level > 4) seconds = 70;
+			if(params.level > 5) seconds = 100;
+			if(params.level > 6) seconds = 180;
+			if(params.level > 7) seconds = 220;
+			if(params.level > 8) seconds = 210;
+			if(params.level > 9) seconds = 320;
+			time.setSeconds(time.getSeconds() - seconds);
 			let user = await User.findOne({
 				date: new Date(Date.now()).toLocaleDateString(),
 				recipient: params.recipient as string,
